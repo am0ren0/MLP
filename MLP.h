@@ -5,6 +5,8 @@
 
 #include <Eigen/Core>
 
+#include <Serializer.h>
+
 namespace femto {
 
 typedef float Real;
@@ -20,6 +22,7 @@ struct MLP {
         std::pointer_to_unary_function<Real,Real> f,df; // activation functions and derivative
         mutable Vector y;
 
+        Layer() {}
         Layer(int prevLayerSize, int thisLayerSize, std::pointer_to_unary_function<Real,Real> _f, std::pointer_to_unary_function<Real,Real> _df) :
             W(Matrix::Random(thisLayerSize,prevLayerSize)),
             b(Vector::Random(thisLayerSize)),
@@ -28,11 +31,15 @@ struct MLP {
 
         int nInputs() const { return W.cols(); }
         int nOutputs() const { return W.rows(); }
+
+        SERIALIZE_MEMBERS(Layer, W, b)
     };
     int nFeats;
     std::vector<Layer> layers; // layers
 
-    MLP(int n) : nFeats(n) {}
+    SERIALIZE_MEMBERS(MLP, nFeats, layers)
+
+    MLP(int n=0) : nFeats(n) {}
 
     template<typename Activation>
     MLP & addLayer(int nNeurons) {
@@ -42,7 +49,7 @@ struct MLP {
     }
 
     int nFeatures() const { return nFeats; }
-    int nOutputs(int iLayer=-1) const { return iLayer<0 ? layers.back().nOutputs() : layers[iLayer].nOutputs(); }
+    int nOutputs(int iLayer=-1) const { return iLayer<0 ? layers[layers.size()+iLayer].nOutputs() : layers[iLayer].nOutputs(); }
 
     const Vector & operator()(const Vector & x) const { return eval(x); }
     const Vector & eval(const Vector & x) const {
